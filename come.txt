@@ -1,0 +1,1 @@
+EU criei este aquivo pelo terminal, agora quero a aprender a puxar um arquivo ja criado para dentro do repositorio
