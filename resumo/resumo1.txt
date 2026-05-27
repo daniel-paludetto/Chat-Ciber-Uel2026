@@ -1,0 +1,480 @@
+# Explicação do Código
+
+Este código implementa um servidor TCP concorrente utilizando as bibliotecas `socket` e `threading`.
+
+O objetivo do programa é permitir que vários clientes se conectem simultaneamente, criando uma thread para cada conexão.
+
+---
+
+#  bibliotecas usadas
+
+```python
+import socket
+```
+
+Importa a biblioteca responsável pela comunicação em rede.
+
+Ela permite:
+
+- criar servidores
+- criar clientes
+- enviar mensagens
+- receber mensagens
+
+---
+
+```python
+import threading
+```
+
+Importa a biblioteca responsável por criar **Threads**.
+
+Threads permitem executar várias tarefas ao mesmo tempo.
+
+No projeto do chat:
+- 1 cliente → 1 thread
+- vários clientes → várias threads
+
+---
+
+# Configurações iniciais
+
+```python
+HEADER = 64
+```
+
+Define que os primeiros **64 bytes** enviados conterão o tamanho da mensagem.
+
+Exemplo:
+
+Mensagem:
+
+Olá
+
+Tamanho:
+
+3
+
+---
+
+```python
+PORT = 5050
+```
+
+Define a porta utilizada pelo servidor.
+
+---
+
+```python
+SERVER = socket.gethostbyname(socket.gethostname())
+```
+
+Obtém automaticamente o endereço IP da máquina.
+
+Exemplo:
+
+```text
+192.168.1.10
+```
+
+---
+
+```python
+ADDR = (SERVER, PORT)
+```
+
+Agrupa IP e porta.
+
+Exemplo:
+
+```text
+("192.168.1.10",5050)
+```
+
+---
+
+```python
+FORMAT = 'utf-8'
+```
+
+Define a codificação utilizada.
+
+Converte:
+
+```text
+Texto ↔ Bytes
+```
+
+---
+
+```python
+DISCONNECT_MESSAGE = "!DISCONNECT"
+```
+
+Mensagem utilizada para encerrar a conexão.
+
+---
+
+# Criação do servidor
+
+```python
+server = socket.socket(
+    socket.AF_INET,
+    socket.SOCK_STREAM
+)
+```
+
+Cria um socket TCP.
+
+Parâmetros:
+
+- `AF_INET` → IPv4
+- `SOCK_STREAM` → TCP
+
+TCP garante:
+
+- ordem
+- entrega
+- confiabilidade
+
+---
+
+```python
+server.bind(ADDR)
+```
+
+Associa o servidor ao endereço.
+
+Equivale a:
+
+```text
+Servidor escutando:
+IP + Porta
+```
+
+---
+
+# Função handle_client()
+
+```python
+def handle_client(conn, addr):
+```
+
+Função executada por cada thread.
+
+Parâmetros:
+
+- `conn` → conexão com cliente
+- `addr` → endereço do cliente
+
+Cada cliente conectado executa uma instância dessa função.
+
+---
+
+```python
+print(f"[NEW CONNECTION] {addr} connected.")
+```
+
+Mostra no terminal quando alguém conecta.
+
+Exemplo:
+
+```text
+[NEW CONNECTION]
+('192.168.1.20',5050)
+```
+
+---
+
+```python
+connected = True
+```
+
+Controla o loop da conexão.
+
+---
+
+```
+while connected:
+```
+
+Mantém comunicação ativa.
+
+---
+
+```python
+msg_length = conn.recv(HEADER)
+.decode(FORMAT)
+```
+
+Recebe os primeiros 64 bytes.
+
+Esses bytes indicam o tamanho da mensagem.
+
+---
+
+```python
+if msg_length:
+```
+
+Verifica se recebeu algo.
+
+---
+
+```python
+msg_length = int(msg_length)
+```
+
+Converte para número.
+
+Exemplo:
+
+```text
+"12"
+↓
+12
+```
+
+---
+
+```python
+msg = conn.recv(msg_length)
+.decode(FORMAT)
+```
+
+Recebe a mensagem real.
+
+Exemplo:
+
+```text
+"Olá servidor"
+```
+
+---
+
+```python
+if msg == DISCONNECT_MESSAGE:
+```
+
+Verifica se cliente pediu desconexão.
+
+---
+
+```python
+connected = False
+```
+
+Encerra comunicação.
+
+---
+
+```python
+print(f"[{addr}] {msg}")
+```
+
+Exibe mensagem recebida.
+
+Exemplo:
+
+```text
+[192.168.1.20]
+Olá
+```
+
+---
+
+```python
+conn.send(
+"Message received"
+.encode(FORMAT)
+)
+```
+
+Envia confirmação ao cliente.
+
+---
+
+```python
+conn.close()
+```
+
+Fecha conexão.
+
+---
+
+# Função start()
+
+```python
+def start():
+```
+
+Responsável por iniciar o servidor.
+
+---
+
+```python
+server.listen()
+```
+
+Coloca servidor em modo de espera.
+
+---
+
+```python
+print(
+f"[LISTENING]
+Server is listening
+on {SERVER}"
+)
+```
+
+Mostra que o servidor iniciou.
+
+---
+
+```python
+while True:
+```
+
+Mantém servidor funcionando continuamente.
+
+---
+
+```python
+conn, addr =
+server.accept()
+```
+
+Espera um cliente conectar.
+
+Retorna:
+
+- conexão
+- endereço
+
+---
+
+# Uso do Threading
+
+```python
+thread =
+threading.Thread(
+target=handle_client,
+args=(conn, addr)
+)
+```
+
+Cria uma thread.
+
+Parâmetros:
+
+- `target`
+→ função executada
+
+- `args`
+→ argumentos enviados
+
+Equivale a:
+
+```python
+handle_client(conn, addr)
+```
+
+---
+
+```python
+thread.start()
+```
+
+Inicia a thread.
+
+Agora o cliente é atendido em paralelo.
+
+---
+
+```python
+print(
+threading.active_count()
+- 1
+)
+```
+
+Conta quantas threads estão ativas.
+
+Subtrai 1 para ignorar a thread principal.
+
+Exemplo:
+
+```text
+3 clientes conectados
+```
+
+---
+
+# Inicialização
+
+```python
+print(
+"[STARTING]
+server is starting..."
+)
+```
+
+Mostra início.
+
+---
+
+```python
+start()
+```
+
+Executa o servidor.
+
+---
+
+# Fluxo Geral
+
+```text
+Servidor inicia
+↓
+
+listen()
+
+↓
+
+Cliente conecta
+
+↓
+
+accept()
+
+↓
+
+Cria thread
+
+↓
+
+start()
+
+↓
+
+handle_client()
+
+↓
+
+Recebe mensagens
+
+↓
+
+Responde
+
+↓
+
+Cliente desconecta
+
+↓
+
+Fecha conexão
+```
+
+Este código implementa um servidor concorrente usando Python, Socket e Threading.
