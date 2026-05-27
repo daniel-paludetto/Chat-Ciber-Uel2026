@@ -1,0 +1,17 @@
+A biblioteca threading do Python funciona como um substituto a ideia original de projeto que seria um a criação de um servidor central. Essa biblioteca permite a execução de múltiplas tarefas simultaneamente dentro do mesmo programa por meio de threads (linhas de execução). Ela é muito utilizada em aplicações que precisam realizar várias operações ao mesmo tempo, como servidores, comunicação em rede, leitura de arquivos e espera por entrada do usuário.
+No código, o threading foi usado para permitir que o servidor atendesse vários clientes ao mesmo tempo. Sempre que um cliente se conecta, o servidor cria uma nova thread responsável por tratar exclusivamente aquela conexão.
+Principais funções utilizadas no código:
+	•	threading.Thread() → Cria uma nova thread.
+Exemplo: 
+thread =
+thrending.Thread(target=handle_client, args=(conn, addr))
+
+	•	target → Define qual função será executada pela thread. Exemplo: target=handle_client 
+	•	Faz com que a thread execute a função handle_client().
+	•	args → Envia argumentos para a função executada pela thread. Exemplo: args=(conn, addr)
+	•	    Equivale a executar: handle_client(conn, addr) 
+	•	start() → Inicia a execução da thread. Exemplo: thread.start() 
+	•	Sem essa função, a thread é criada mas não executa.
+	•	threading.active_count() → Retorna o número de threads ativas no programa. Exemplo: threading.active_count() - 1
+	•	
+	•	O -1 é usado para desconsiderar a thread principal e mostrar apenas as conexões dos clientes.
