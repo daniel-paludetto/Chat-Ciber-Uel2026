@@ -1,5 +1,8 @@
-A biblioteca threading do Python funciona como um substituto a ideia original de projeto que seria um a criação de um servidor central. Essa biblioteca permite a execução de múltiplas tarefas simultaneamente dentro do mesmo programa por meio de threads (linhas de execução). Ela é muito utilizada em aplicações que precisam realizar várias operações ao mesmo tempo, como servidores, comunicação em rede, leitura de arquivos e espera por entrada do usuário.
-No código, o threading foi usado para permitir que o servidor atendesse vários clientes ao mesmo tempo. Sempre que um cliente se conecta, o servidor cria uma nova thread responsável por tratar exclusivamente aquela conexão.
+A biblioteca threading do Python funciona como um substituto a ideia original de projeto que seria um a criação de um servidor central.
+Essa biblioteca permite a execução de múltiplas tarefas simultaneamente dentro do mesmo programa por meio de threads (linhas de execução). 
+Ela é muito utilizada em aplicações que precisam realizar várias operações ao mesmo tempo, como servidores, comunicação em rede, leitura de arquivos e espera por entrada do usuário.
+No código, o threading foi usado para permitir que o servidor atendesse vários clientes ao mesmo tempo.
+Sempre que um cliente se conecta, o servidor cria uma nova thread responsável por tratar exclusivamente aquela conexão.
 Principais funções utilizadas no código:
 	•	threading.Thread() → Cria uma nova thread.
 Exemplo: 
