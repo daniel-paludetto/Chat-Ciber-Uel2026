@@ -1,0 +1,134 @@
+#codigo explicado
+
+# Importa as bibliotecas necessárias
+import socket          # Responsável pela comunicação via rede
+import threading       # Permite executar várias tarefas ao mesmo tempo (threads)
+import time            # Utilizado para adicionar pequenos atrasos
+
+# Solicita ao usuário um apelido para ser identificado no chat
+nickname = input("Choose a nickname: ")
+
+# Quantidade de bytes usados para informar o tamanho da mensagem
+HEADER = 64
+
+# Porta utilizada para a comunicação
+PORT = 5050
+
+# Formato de codificação das mensagens
+FORMAT = 'utf-8'
+
+# Mensagem especial utilizada para desconectar do servidor
+DISCONNECT_MESSAGE = "!DISCONNECT"
+
+# Endereço IP do servidor
+SERVER = "191.52.106.190"
+
+# Tupla contendo endereço IP e porta
+ADDR = (SERVER, PORT)
+
+# Cria um socket TCP utilizando IPv4
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Conecta o cliente ao servidor
+client.connect(ADDR)
+
+# Função responsável por receber mensagens do servidor
+def receive():
+    while True:
+        try:
+            # Recebe uma mensagem do servidor
+            message = client.recv(1024).decode(FORMAT)
+
+            # Caso o servidor solicite o nickname
+            if message == 'NICK':
+                # Envia o nickname para o servidor
+                client.send(nickname.encode(FORMAT))
+                pass
+            else:
+                # Exibe qualquer outra mensagem recebida
+                print(message)
+
+        except:
+            # Caso ocorra algum erro de comunicação
+            print("An error occurred")
+            client.close()
+            break
+
+# Função responsável por enviar mensagens ao servidor
+def send():
+
+    # Variável de controle do laço
+    connected = True
+
+    while connected:
+
+        # Pequena pausa para evitar conflitos entre entrada e saída
+        time.sleep(0.8)
+
+        # Lê a mensagem digitada pelo usuário
+        user_input = input("> ")
+
+        # Verifica se o usuário deseja sair
+        if user_input == DISCONNECT_MESSAGE:
+
+            print("Disconnecting from the server...")
+
+            connected = False
+
+            # Mensagem de desconexão
+            msg = DISCONNECT_MESSAGE
+
+            # Converte para bytes
+            message = msg.encode(FORMAT)
+
+            # Calcula o tamanho da mensagem
+            msg_length = str(len(message)).encode(FORMAT)
+
+            # Completa o cabeçalho com espaços até atingir 64 bytes
+            msg_length += b' ' * (HEADER - len(msg_length))
+
+            # Envia primeiro o tamanho da mensagem
+            client.send(msg_length)
+
+            # Depois envia a mensagem
+            client.send(message)
+
+            # Aguarda um instante antes de fechar
+            time.sleep(1)
+
+            # Fecha a conexão
+            client.close()
+
+            break
+
+        else:
+
+            # Acrescenta o nickname antes da mensagem
+            msg = f"{nickname}: {user_input}"
+
+            # Codifica a mensagem
+            message = msg.encode(FORMAT)
+
+            # Calcula o tamanho da mensagem
+            msg_length = str(len(message)).encode(FORMAT)
+
+            # Completa o cabeçalho até 64 bytes
+            msg_length += b' ' * (HEADER - len(msg_length))
+
+            # Envia o cabeçalho
+            client.send(msg_length)
+
+            # Envia a mensagem
+            client.send(message)
+
+# Cria uma thread responsável por receber mensagens
+receive_thread = threading.Thread(target=receive)
+
+# Inicia a thread de recebimento
+receive_thread.start()
+
+# Cria uma thread responsável por enviar mensagens
+send_thread = threading.Thread(target=send)
+
+# Inicia a thread de envio
+send_thread.start()
