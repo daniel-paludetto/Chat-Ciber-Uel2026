@@ -1,9 +1,7 @@
 import pygame
 from sys import exit
 
-#fazer um comentario para testar
-
-#mais atualizações
+#fazer um comentario para testars
 
 def display_score():
     current_time = int(pygame.time.get_ticks() / 1000) -start_time
