@@ -2,6 +2,9 @@ raio = float(input('informe seu raio\n'))
 
 pi = 3.1415
 
+
+#teste pelo navegador
+
 c = 2*pi*raio
 
 v = (4/3)*pi*raio**3
