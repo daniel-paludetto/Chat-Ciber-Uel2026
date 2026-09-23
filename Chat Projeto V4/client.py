@@ -28,12 +28,12 @@ pygame.init()
 LARGURA, ALTURA = 800, 600
 
 tela = pygame.display.set_mode((LARGURA, ALTURA))
-pygame.display.set_caption("Terminal Pygame")
+pygame.display.set_caption("WhatsApp 2.0 :D")
 
 relogio = pygame.time.Clock()
 
-PRETO = (0,0,0)
-VERDE = (0,255,0)
+AZUL = ('#012456')
+BRANCO = ("#F5F7FA")
 
 fonte = pygame.font.SysFont("consolas", 24)
 altura_linha = fonte.get_linesize()
@@ -104,15 +104,15 @@ while conectado:
         mensagens.pop()
 
     #DESENHO NA TELA
-    tela.fill(PRETO)
+    tela.fill(AZUL)
 
     y_atual = y_input - altura_linha
     for msg in reversed(mensagens):
-        msg_superficie = fonte.render(msg, True, VERDE)
+        msg_superficie = fonte.render(msg, True, BRANCO)
         tela.blit(msg_superficie, (10, y_atual))
         y_atual -= altura_linha
 
-    texto_superficie = fonte.render(f"> {texto_digitado}", True, VERDE)
+    texto_superficie = fonte.render(f"> {texto_digitado}", True, BRANCO)
     tela.blit(texto_superficie, (10, y_input))
 
     pygame.display.flip()
