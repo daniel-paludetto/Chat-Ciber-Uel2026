@@ -4,8 +4,6 @@ import socket
 import threading
 import pygame
 
-nickname = input("Choose a nickname: ")
-
 HEADER = 64
 PORT = 5050
 FORMAT = 'utf-8'
@@ -39,7 +37,10 @@ fonte = pygame.font.SysFont("consolas", 24)
 altura_linha = fonte.get_linesize()
 
 mensagens = []
+nickname = ""
 texto_digitado = ""
+
+tela_atual = "nickname"
 
 y_input = ALTURA - altura_linha - 20
 
@@ -66,10 +67,6 @@ def send(message):
     except:   
         pass
  
-if conectado:
-    receive_thread = threading.Thread(target=receive)
-    receive_thread.start()
-
 while conectado:
     for evento in pygame.event.get():
         
@@ -78,25 +75,45 @@ while conectado:
             
         elif evento.type == pygame.KEYDOWN:
             
-            #ENTER
-            if evento.key == pygame.K_RETURN:
+            if tela_atual == "nickname":
                 
-                if texto_digitado.strip() != "":
-                    msg = f"{nickname}: {texto_digitado}"
-                    send(msg)
-                    texto_digitado = ""
-            
-            #BACKSPACE
-            elif evento.key == pygame.K_BACKSPACE:
-                texto_digitado = texto_digitado[:-1]
+                if evento.key == pygame.K_RETURN:
+                    
+                    if nickname.strip() != "":
+                        tela_atual = "chat"
+                        receive_thread = threading.Thread(target=receive)
+                        receive_thread.start()
                 
-            elif evento.key == pygame.K_ESCAPE:
-                conectado = False
+                elif evento.key == pygame.K_BACKSPACE:
+                    nickname = nickname[:-1]    
+                
+                elif evento.unicode.isprintable():
+                    
+                    if len(nickname) < 20:
+                        nickname += evento.unicode 
+                    
+                    
+            elif tela_atual == "chat":
             
-            #TEXTO DIGITADO
-            else:
-                if evento.unicode.isprintable():
-                    texto_digitado += evento.unicode
+                #ENTER
+                if evento.key == pygame.K_RETURN:
+                
+                    if texto_digitado.strip() != "":
+                        msg = f"{nickname}: {texto_digitado}"
+                        send(msg)
+                        texto_digitado = ""
+            
+                #BACKSPACE
+                elif evento.key == pygame.K_BACKSPACE:
+                    texto_digitado = texto_digitado[:-1]
+                
+                elif evento.key == pygame.K_ESCAPE:
+                    conectado = False
+            
+                #TEXTO DIGITADO
+                else:
+                    if evento.unicode.isprintable():
+                        texto_digitado += evento.unicode
 
     #GERENCIAMENTO DE MEMORIA                
     max_mensagens = y_input
@@ -106,14 +123,28 @@ while conectado:
     #DESENHO NA TELA
     tela.fill(AZUL)
 
-    y_atual = y_input - altura_linha
-    for msg in reversed(mensagens):
-        msg_superficie = fonte.render(msg, True, BRANCO)
-        tela.blit(msg_superficie, (10, y_atual))
-        y_atual -= altura_linha
+    if tela_atual == "nickname":
+        titulo = fonte.render("Whatsapp 2.0", True, BRANCO)
+        tela.blit(titulo, (300, 150))
+        
+        texto = fonte.render("Digite seu nickname:",True,BRANCO)
+        tela.blit(texto, (250, 250))
 
-    texto_superficie = fonte.render(f"> {texto_digitado}", True, BRANCO)
-    tela.blit(texto_superficie, (10, y_input))
+        nickname_superficie = fonte.render(f"> {nickname}",True,BRANCO)
+        tela.blit(nickname_superficie,(250, 310))
+
+        instrucao = fonte.render("Pressione ENTER para continuar",True,BRANCO)
+        tela.blit(instrucao,(200, 400))
+
+    elif tela_atual == "chat":
+        y_atual = y_input - altura_linha
+        for msg in reversed(mensagens):
+            msg_superficie = fonte.render(msg, True, BRANCO)
+            tela.blit(msg_superficie, (10, y_atual))
+            y_atual -= altura_linha
+
+        texto_superficie = fonte.render(f"> {texto_digitado}", True, BRANCO)
+        tela.blit(texto_superficie, (10, y_input))
 
     pygame.display.flip()
 
@@ -131,5 +162,3 @@ if client:
         client.close()
 
 pygame.quit()
-                    
-                    
