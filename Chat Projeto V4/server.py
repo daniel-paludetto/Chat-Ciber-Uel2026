@@ -3,30 +3,21 @@
 import socket
 import threading
 
-HEADER = 64
-PORT = 5050
-SERVER = "0.0.0.0"
-ADDR = (SERVER, PORT)
-FORMAT = "utf-8"
-DISCONNECT_MESSAGE = "!DISCONNECT"
+from config import HEADER, PORT, SERVER, ADDR, FORMAT, DISCONNECT_MESSAGE
+#server
+
+import socket
+import threading
+
+from config import HEADER, PORT, SERVER, ADDR, FORMAT, DISCONNECT_MESSAGE
+from client_manager import clients, nicknames, broadcast, remove_client
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 server.listen()
 
-clients = []
-nicknames = []
-
-
-def remove_client(client):
-    index = clients.index(client)
-    client.close()
-    print(clients)
-    nickname = nicknames[index]
-    clients.remove(client)
-    print(f"{nickname} desconectou do chat")
-    broadcast(f"{nickname} left the chat".encode(FORMAT))
-    nicknames.remove(nickname)
+def remove_client(client): ...
+def broadcast(message): ...
 
 
 def broadcast(message):
