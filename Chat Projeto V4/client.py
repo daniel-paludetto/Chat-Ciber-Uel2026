@@ -16,7 +16,7 @@ def main():
     tela_atual = "nickname"
 
     rodando = True
-    while rodando and comunicaçao.conectar:
+    while rodando and comunicaçao.conectado: #*
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 rodando = False
