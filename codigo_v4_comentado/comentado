@@ -1,0 +1,332 @@
+HEADER = 64                          # tamanho fixo (em bytes) do cabeçalho que informa o tamanho da mensagem
+PORT = 5050
+SERVER = "localhost"
+ADDR = (SERVER, PORT)
+FORMAT = "utf-8"
+DISCONNECT_MESSAGE = "!DISCONNECT"   # mensagem especial que avisa que o cliente ta saindo
+
+
+  import socket
+
+from config import ADDR
+
+
+def create_server():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    server.bind(ADDR)   # amarra o socket no endereço/porta definidos no config
+
+    server.listen()     # deixa esperando conexões
+
+    return server
+
+  clients = []
+nicknames = []
+
+
+def broadcast(message):
+    # manda a mensagem pra todos os clientes conectados
+    for client in clients:
+        client.send(message)
+
+
+def remove_client(client):
+    # pega a posição do cliente na lista, pra achar o nickname correspondente
+    index = clients.index(client)
+
+    client.close()
+
+    print(clients)  # só pra debugar e ver quem sobrou
+
+    nickname = nicknames[index]
+
+    clients.remove(client)
+
+    print(f"{nickname} desconectou do chat")
+
+    # avisa todo mundo que esse cliente saiu
+    broadcast(f"{nickname} left the chat".encode("utf-8"))
+
+    nicknames.remove(nickname)
+
+
+  from config import HEADER, FORMAT, DISCONNECT_MESSAGE
+from client_manager import broadcast, remove_client
+
+
+def handle_client(client, addr):
+    connected = True
+
+    while connected:
+        try:
+            # primeiro recebe o "cabeçalho", que diz o tamanho da mensagem que vem
+            msg_length = client.recv(HEADER).decode(FORMAT)
+
+            if msg_length:
+                msg_length = int(msg_length)
+                # agora sim recebe a mensagem completa, do tamanho que o header disse
+                msg = client.recv(msg_length).decode(FORMAT)
+
+                if msg == DISCONNECT_MESSAGE:
+                    remove_client(client)
+                    break
+
+                # manda pra todo mundo que ta conectado
+                broadcast(msg.encode(FORMAT))
+
+        except:
+            # se der qualquer erro (cliente caiu, conexão quebrou etc) tira ele da lista
+            remove_client(client)
+            break
+
+    client.close()
+
+
+  import threading
+
+from config import FORMAT
+from client_manager import clients, nicknames, broadcast
+from client_handler import handle_client
+
+
+def receive(server):
+    while True:
+        # fica esperando alguém conectar (isso trava aqui até chegar cliente novo)
+        client, addr = server.accept()
+
+        print(f"Connected with {str(addr)}")
+
+        # pede o nickname assim que conecta
+        client.send("NICK".encode(FORMAT))
+
+        nickname = client.recv(1024).decode(FORMAT)
+
+        nicknames.append(nickname)
+        clients.append(client)
+
+        print(f"Nickname of client is {nickname}")
+
+        # avisa todo mundo que já ta no chat que chegou gente nova
+        broadcast(f"{nickname} joined the chat".encode(FORMAT))
+
+        client.send("Connected to the server".encode(FORMAT))
+
+        # abre uma thread só pra esse cliente, assim o servidor consegue atender vários ao mesmo tempo
+        thread = threading.Thread(
+            target=handle_client,
+            args=(client, addr)
+        )
+
+        thread.start()
+
+
+  from server_socket import create_server
+from server_connection import receive
+
+# cria o socket do servidor e deixa ele pronto pra escutar
+server = create_server()
+
+print("[STARTING] server is listening...")
+
+# fica em loop aceitando conexões novas
+receive(server)
+
+
+#modulo que isola a comunicacao em rede
+import socket
+import threading
+import interface 
+from config import HEADER, PORT, SERVER, FORMAT, DISCONNECT_MESSAGE
+
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+conectado = False
+mensagens = []
+
+def conectar():
+    global conectado
+    try:
+        client.connect((SERVER, PORT))
+        conectado = True
+        return True
+    except Exception as e:
+        print(f"Erro ao conectar com o servidor: {e}")
+        conectado = False
+        return False
+
+def receber(obter_nickname):
+    global conectado
+    while conectado:
+        try:
+            message = client.recv(1024).decode(FORMAT)
+            if message == 'NICK':
+                # servidor ta pedindo o nick, entao pega ele (via callback) e manda de volta
+                nickname = obter_nickname()
+                client.send(nickname.encode(FORMAT))
+            else:
+                # se nao for pedido de nick, é mensagem normal, guarda pra mostrar na tela
+                mensagens.append(message)
+        except:
+            print("Conexão perdida com o servidor.")
+            fechar_conexao()
+            break
+
+def iniciar_receber(obter_nickname):
+    # roda o recebimento numa thread separada pra nao travar a interface enquanto escuta o servidor
+    if conectado:
+        thread = threading.Thread(target=receber, args=(obter_nickname,), daemon=True)
+        thread.start()
+
+def mandar(mensagem):
+    if not conectado:
+        return
+    try:
+        msg_encoded = mensagem.encode(FORMAT)
+        msg_length = str(len(msg_encoded)).encode(FORMAT)
+        msg_length += b' ' * (HEADER - len(msg_length))  # completa com espaço pra ficar do tamanho fixo do header
+        client.send(msg_length)
+        client.send(msg_encoded)
+    except Exception as e:
+        print(f"Erro ao enviar mensagem: {e}")
+
+def desconectar():
+    if conectado:
+        mandar(DISCONNECT_MESSAGE)  # avisa o servidor que ta saindo antes de fechar
+        fechar_conexao()
+
+def fechar_conexao():
+    global conectado
+    conectado = False
+    try:
+        client.close()
+    except:
+        pass
+
+
+
+          #modulo da interfacee
+import pygame
+
+AZUL = (1, 36, 86)
+BRANCO = (245, 247, 250)
+
+LARGURA, ALTURA = 800, 600
+tela = None
+fonte = None
+relogio = None
+altura_linha = 0
+y_input = 0
+
+def inicializar_interface():
+    global tela, fonte, relogio, altura_linha, y_input
+    pygame.init()
+    tela = pygame.display.set_mode((LARGURA, ALTURA))
+    pygame.display.set_caption("WhatsApp 2.0 :D")
+    relogio = pygame.time.Clock()
+    
+    fonte = pygame.font.SysFont("consolas", 24)
+    altura_linha = fonte.get_linesize()
+    y_input = ALTURA - altura_linha - 20  # deixa a barra de digitação fixa perto do fim da tela
+
+def desenhar_tela_nickname(nickname):
+    tela.fill(AZUL)
+    
+    titulo = fonte.render("Whatsapp 2.0", True, BRANCO)
+    tela.blit(titulo, (300, 150))
+    
+    texto = fonte.render("Digite seu nickname:", True, BRANCO)
+    tela.blit(texto, (250, 250))
+
+    nickname_surf = fonte.render(f"> {nickname}", True, BRANCO)  # mostra o que ta sendo digitado com um "> " na frente
+    tela.blit(nickname_surf, (250, 310))
+
+    instrucao = fonte.render("Pressione ENTER para continuar", True, BRANCO)
+    tela.blit(instrucao, (200, 400))
+
+    pygame.display.flip()
+
+def desenhar_tela_chat(lista_mensagens, texto_digitado):
+    tela.fill(AZUL)
+
+    # desenha as mensagens de baixo pra cima, começando logo acima da barra de digitação
+    y_atual = y_input - altura_linha
+    for msg in reversed(lista_mensagens):
+        if y_atual < 0:  # se passar do topo da tela, para de desenhar
+            break
+        msg_surf = fonte.render(msg, True, BRANCO)
+        tela.blit(msg_surf, (10, y_atual))
+        y_atual -= altura_linha
+
+    texto_surf = fonte.render(f"> {texto_digitado}", True, BRANCO)
+    tela.blit(texto_surf, (10, y_input))
+
+    pygame.display.flip()
+
+def controlar_fps(fps=60):
+    relogio.tick(fps)
+
+def encerrar_interface():
+    pygame.quit()
+
+
+
+import pygame
+import interface
+import comunicaçao
+
+def main():
+    interface.inicializar_interface()
+    
+    # tenta conectar no servidor, se nao der já sai fora
+    if not comunicaçao.conectar():
+        print("Não foi possível conectar ao servidor. Encerrando...")
+        interface.encerrar_interface()
+        return
+
+    nickname = ""
+    texto_digitado = ""
+    tela_atual = "nickname"  # controla se ta na tela de nick ou já no chat
+
+    rodando = True
+    while rodando and comunicaçao.conectado:  # corrigido: era comunicaçao.conectar (a função), agora checa o estado
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                rodando = False
+
+            elif evento.type == pygame.KEYDOWN:
+                if tela_atual == "nickname":
+                    if evento.key == pygame.K_RETURN:
+                        if nickname.strip() != "":  # só deixa continuar se digitou algo
+                            tela_atual = "chat"
+                            comunicaçao.iniciar_receber(lambda: nickname) # labda cria funcoes sem nome (mais ideal pra coisas simples)
+                    elif evento.key == pygame.K_BACKSPACE:
+                        nickname = nickname[:-1]
+                    elif evento.unicode.isprintable() and len(nickname) < 20:  # limita o nick pra nao ficar gigante
+                        nickname += evento.unicode
+
+                elif tela_atual == "chat":
+                    if evento.key == pygame.K_RETURN:
+                        if texto_digitado.strip() != "":
+                            # monta a mensagem com o nick na frente e manda pro servidor
+                            msg = f"{nickname}: {texto_digitado}"
+                            comunicaçao.mandar(msg)
+                            texto_digitado = ""
+                    elif evento.key == pygame.K_BACKSPACE:
+                        texto_digitado = texto_digitado[:-1]
+                    elif evento.key == pygame.K_ESCAPE:
+                        rodando = False  # sai do chat com ESC
+                    elif evento.unicode.isprintable():
+                        texto_digitado += evento.unicode
+
+        # desenha a tela certa dependendo de onde o usuario ta
+        if tela_atual == "nickname":
+            interface.desenhar_tela_nickname(nickname)
+        elif tela_atual == "chat":
+            interface.desenhar_tela_chat(comunicaçao.mensagens, texto_digitado)
+
+        interface.controlar_fps(60)  # trava o fps em 60
+
+    comunicaçao.desconectar()
+    interface.encerrar_interface()
+
+if __name__ == "__main__":
+    main()
