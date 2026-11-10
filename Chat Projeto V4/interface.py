@@ -39,19 +39,49 @@ def desenhar_tela_nickname(nickname):
 
     pygame.display.flip()
 
+def quebrar_texto(texto, largura_max):
+    linhas = []
+    atual = ""
+    for palavra in texto.split(" "):
+        candidato = palavra if atual == "" else atual + " " + palavra
+        if fonte.size(candidato)[0] <= largura_max:
+            atual = candidato
+        elif atual and fonte.size(palavra)[0] <= largura_max:
+            linhas.append(atual)
+            atual = palavra
+        else:
+            if atual:
+                atual += " "
+            for c in palavra:
+                if fonte.size(atual + c)[0] <= largura_max:
+                    atual += c
+                else:
+                    linhas.append(atual)
+                    atual = c
+    linhas.append(atual)
+    return linhas
+
 def desenhar_tela_chat(lista_mensagens, texto_digitado):
     tela.fill(AZUL)
-
-    y_atual = y_input - altura_linha
+    largura_max = LARGURA - 20
+    
+    linhas_input = quebrar_texto(f"> {texto_digitado}", largura_max)
+    y_topo_input = ALTURA - 20 - len(linhas_input) * altura_linha
+    
+    for i, linha in enumerate(linhas_input):
+        surf = fonte.render(linha, True, BRANCO)
+        tela.blit(surf, (10, y_topo_input + i * altura_linha))
+    y_atual = y_topo_input
+    
+    y_atual = y_topo_input
     for msg in reversed(lista_mensagens):
+        linhas = quebrar_texto(msg, largura_max)
+        y_atual -= len(linhas) * altura_linha
+        for i, linha in enumerate(linhas):
+            surf = fonte.render(linha, True, BRANCO)
+            tela.blit(surf, (10, y_atual + i * altura_linha))
         if y_atual < 0:
             break
-        msg_surf = fonte.render(msg, True, BRANCO)
-        tela.blit(msg_surf, (10, y_atual))
-        y_atual -= altura_linha
-
-    texto_surf = fonte.render(f"> {texto_digitado}", True, BRANCO)
-    tela.blit(texto_surf, (10, y_input))
 
     pygame.display.flip()
 
